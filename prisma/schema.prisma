@@ -1,0 +1,28 @@
+
+
+generator client {
+  provider      = "prisma-client-js"
+  // Manter esta linha é crucial para o Docker
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      UserRole @default(CLIENT)
+  createdAt DateTime @default(now())
+}
+
+
+enum UserRole {
+  ADMIN
+  CLIENT
+}
