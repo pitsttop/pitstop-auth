@@ -4,10 +4,14 @@ import express from 'express';
 import authRoutes from './routes/auth.routes';
 import { authorize } from './middlewares/auth.middlewares';
 import { UserRole } from '@prisma/client';
+import cors from 'cors';
 
 const app = express();
 
 app.use(express.json());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000' 
+}));
 app.use('/auth', authRoutes);
 
 // Rota protegida usada apenas em testes de integração
