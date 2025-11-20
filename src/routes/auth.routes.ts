@@ -1,61 +1,47 @@
 import { Router, Request, Response } from "express";
 import { createUser, loginUser } from "../services/user.services";
-// 1. IMPORTAR O SERVIÇO QUE VOCÊ COPIOU PARA ESTE REPO
-import { createClient } from "../services/client.services"; 
+// REMOVA O IMPORT DO CLIENT SERVICE!
+// import { createClient } from "../services/client.services"; <--- APAGUE ISSO
 
 const router = Router();
 
-// Expressão regular para validar email
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 router.post("/signup", async (req: Request, res: Response) => {
   try {
-    // Esta é a linha que estava incompleta. 
-    // Certifique-se de que o frontend envie 'name', 'email', 'password', 'phone', 'address'.
-    const { name, email, password, phone, address } = req.body;
+    // Recebemos os dados. Note que 'phone' e 'address' não serão usados aqui no Auth,
+    // mas o frontend pode enviar. Vamos usar apenas name, email e password.
+    const { name, email, password } = req.body;
 
-    // --- 2. Validações de email e senha ---
+    // --- Validações ---
     if (!email || !emailRegex.test(email)) {
       return res.status(400).json({ error: "Email inválido ou ausente.", code: 'INVALID_EMAIL' });
     }
     if (!password || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ error: "Senha inválida: mínimo 8 caracteres.", code: 'INVALID_PASSWORD' });
     }
-    if (!name || !phone) {
-        return res.status(400).json({ error: "Nome e telefone são obrigatórios.", code: 'MISSING_FIELDS' });
+    if (!name) {
+        return res.status(400).json({ error: "Nome é obrigatório.", code: 'MISSING_FIELDS' });
     }
 
-    // --- 3. Lógica "Inteligente" (criar os dois) ---
+    // --- Lógica Limpa (Apenas Auth) ---
     
-    // 3a. Cria o registro de autenticação (User)
-    // O service 'createUser' deve retornar o usuário (sem a senha!)
-    const user = await createUser({ name, email, password }); // Passa apenas os dados do User
+    // 1. Cria o Usuário (Schema Auth)
+    const user = await createUser({ name, email, password });
 
-    // 3b. Cria o registro de negócio (Client)
-    const client = await createClient({
-      name: name, // Usa os dados do 'user' recém-criado
-      email: user.email,
-      phone: phone, // Usa o 'phone' do req.body
-      address: address || null, // Usa o 'address' (opcional)
-      // Se o model Client tiver um link para o User (ex: userId),
-      // você deve fazer a conexão aqui.
-      // Ex: userId: user.id 
-    });
-
-    // 4. (Opcional, mas recomendado) Faça o login automático
+    // 2. Faz o login automático para gerar o token
     const { token } = await loginUser({ email, password });
 
+    // 3. Retorna o sucesso
+    // NÃO CRIAMOS O CLIENTE AQUI. O Frontend deve fazer isso usando o token.
     res.status(201).json({
-      message: "Usuário e Cliente criados com sucesso!",
-      // Nunca retorne a senha!
+      message: "Usuário criado com sucesso!",
       user: { id: user.id, email: user.email, name: user.name, role: user.role }, 
-      client,
-      accessToken: token // Envia o token para o frontend já sair logado
+      accessToken: token 
     });
 
   } catch (error: any) {
     console.error("Erro no signup:", error);
-    // Trata erros (ex: email duplicado) que vêm do service
     if (error && error.statusCode) {
       return res.status(error.statusCode).json({ error: error.message, code: error.code });
     }
@@ -63,7 +49,6 @@ router.post("/signup", async (req: Request, res: Response) => {
   }
 });
 
-// --- ROTA DE LOGIN CORRIGIDA ---
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -73,11 +58,9 @@ router.post("/login", async (req: Request, res: Response) => {
     
     const { token } = await loginUser(req.body);
     
-    // MUDANÇA IMPORTANTE: O frontend (useAuth.tsx) espera 'accessToken'
     res.json({ accessToken: token }); 
 
   } catch (error: any) {
-    // Trata erros (ex: senha inválida) que vêm do service
     const body: any = { error: error.message };
     if (error.code) body.code = error.code;
     return res.status(401).json(body);
