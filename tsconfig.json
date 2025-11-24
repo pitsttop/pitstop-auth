@@ -2,6 +2,7 @@
   "compilerOptions": {
     "sourceMap": true,
     "outDir": "dist",
+    "rootDir": "./src",
     "strict": true,
     "lib": ["esnext"],
     "esModuleInterop": true,
@@ -9,5 +10,7 @@
     "target": "es2020",
     "moduleResolution": "nodenext",  
     "isolatedModules": true        
-  }
+  },
+   "include": ["src/**/*"],
+  "exclude": ["node_modules", "prisma", "test", "**/*.spec.ts", "**/*.test.ts"]
 }

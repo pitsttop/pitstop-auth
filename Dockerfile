@@ -1,16 +1,22 @@
-# pitstop-auth/Dockerfile
-
-# Usamos uma imagem oficial do Node.js como base
 FROM node:18-alpine
 
-# Define o diretório de trabalho dentro do contêiner
 WORKDIR /app
 
-# Copia os arquivos de definição de pacotes
-COPY package.json package-lock.json ./
-
-# Instala TODAS as dependências
+# Instala dependências
+COPY package*.json ./
 RUN npm install
 
-# Copia o resto do código-fonte do projeto
+# Copia código
 COPY . .
+
+# Gera o Prisma Client (Essencial!)
+RUN npx prisma generate
+
+# Compila o TypeScript (Cria a pasta dist)
+RUN npm run build
+
+# Porta do Auth (Geralmente 3002, mas o Render injeta a PORT correta)
+EXPOSE 3002
+
+# Comando de inicialização
+CMD ["npm", "run", "start"]
